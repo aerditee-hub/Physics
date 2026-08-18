@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>PHYSICS · The Standard Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --void:#020306;
+    --panel:rgba(8,12,22,0.72);
+    --panel-solid:#080b16;
+    --panel-2:rgba(12,17,29,0.75);
+    --line:rgba(100,150,190,0.22);
+    --line-soft:rgba(100,150,190,0.12);
+    --line-bright:rgba(110,225,255,0.55);
+    --cyan:#4fd6ff;
+    --cyan-dim:#255a6e;
+    --violet:#a888ff;
+    --amber:#ffb454;
+    --rose:#ff6b8b;
+    --green:#6ee7a8;
+    --text:#93a0b8;
+    --text-dim:#5d6880;
+    --text-faint:#3a4258;
+    --mono:'JetBrains Mono','Courier New',monospace;
+    --display:'Space Grotesk','Segoe UI',sans-serif;
+    --tech:'Orbitron','Space Grotesk','Segoe UI',sans-serif;
+
+    /* force colors, shared across the whole room */
+    --f-strong:#ff6b8b;
+    --f-em:#4fd6ff;
+    --f-weak:#a888ff;
+    --f-higgs:#ffb454;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--void);color:var(--text);font-family:var(--display);min-height:100%;}
+  body{overflow-x:hidden;}
+  ::selection{background:rgba(79,214,255,0.3);}
+
+  /* ============ AMBIENT HUD LAYERS ============ */
+  .grid-overlay{
+    position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.4;
+    background-image:
+      linear-gradient(rgba(100,160,210,0.055) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(100,160,210,0.055) 1px, transparent 1px);
+    background-size:46px 46px;
+    -webkit-mask-image:radial-gradient(ellipse 78% 68% at 50% 30%, #000 35%, transparent 88%);
+    mask-image:radial-gradient(ellipse 78% 68% at 50% 30%, #000 35%, transparent 88%);
+  }
+  .scan-sweep{
+    position:fixed;left:0;right:0;height:120px;z-index:1;pointer-events:none;top:-20%;
+    background:linear-gradient(to bottom, transparent, rgba(79,214,255,0.05) 45%, rgba(79,214,255,0.09) 50%, rgba(79,214,255,0.05) 55%, transparent);
+    animation:scandown 8.5s linear infinite;
+  }
+  @keyframes scandown{0%{transform:translateY(-10vh);}100%{transform:translateY(110vh);}}
+
+  .panel,.p-window{position:relative;}
+  .panel::before,.p-window::before{
+    content:'';position:absolute;inset:0;pointer-events:none;opacity:.6;
+    background-image:
+      linear-gradient(var(--line-bright),var(--line-bright)),linear-gradient(var(--line-bright),var(--line-bright)),
+      linear-gradient(var(--line-bright),var(--line-bright)),linear-gradient(var(--line-bright),var(--line-bright)),
+      linear-gradient(var(--line-bright),var(--line-bright)),linear-gradient(var(--line-bright),var(--line-bright)),
+      linear-gradient(var(--line-bright),var(--line-bright)),linear-gradient(var(--line-bright),var(--line-bright));
+    background-repeat:no-repeat;
+    background-size:11px 2px,2px 11px, 11px 2px,2px 11px, 11px 2px,2px 11px, 11px 2px,2px 11px;
+    background-position:0 0,0 0, 100% 0,100% 0, 0 100%,0 100%, 100% 100%,100% 100%;
+  }
+
+  .vignette{
+    position:fixed;inset:0;pointer-events:none;z-index:1;
+    background:radial-gradient(ellipse 90% 80% at 50% 20%, transparent 55%, rgba(3,4,10,0.55) 100%);
+  }
+
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @keyframes spinrev{to{transform:rotate(-360deg);}}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+  /* ============ SPLASH / LOADER ============ */
+  #splash{
+    position:fixed;inset:0;z-index:100;background:var(--void);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+    transition:opacity .7s ease, visibility .7s;
+  }
+  #splash.hidden{opacity:0;visibility:hidden;pointer-events:none;}
+  #splash .grid-overlay,#splash .scan-sweep{position:absolute;}
+
+  .atom{position:relative;width:130px;height:130px;}
+  .atom .orbit{
+    position:absolute;inset:0;border-radius:50%;border:1px solid rgba(255,180,84,0.18);
+  }
+  .atom .orbit.o1{animation:spin 3.6s linear infinite; transform:rotateX(72deg);}
+  .atom .orbit.o2{animation:spinrev 4.6s linear infinite; transform:rotateX(72deg) rotateZ(60deg);}
+  .atom .orbit.o3{animation:spin 5.4s linear infinite; transform:rotateX(72deg) rotateZ(120deg);}
+  .atom{perspective:600px;}
+  .atom .orbit i{
+    position:absolute;top:50%;left:0;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;
+    background:var(--cyan);box-shadow:0 0 10px var(--cyan);
+  }
+  .atom .orbit.o2 i{background:var(--violet);box-shadow:0 0 10px var(--violet);}
+  .atom .orbit.o3 i{background:var(--rose);box-shadow:0 0 10px var(--rose);}
+  .atom .core{
+    position:absolute;top:50%;left:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff3dd, var(--amber) 55%, #a35f16 100%);
+    box-shadow:0 0 22px 4px rgba(255,180,84,.55), 0 0 46px 12px rgba(255,180,84,.25);
+    animation:pulse 1.8s ease-in-out infinite;
+  }
+
+  #splash .ring-static{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(100,150,190,0.14);}
+  #splash .ring-static.r2{inset:-22px;}
+  #splash .ring-static.r3{inset:-44px;}
+
+  #splash .brandline{font-family:var(--tech);font-weight:700;font-size:15px;letter-spacing:.16em;color:#dbe4f5;text-transform:uppercase;text-align:center;}
+  #splash .brandline span{color:var(--amber);text-shadow:0 0 12px rgba(255,180,84,.5);}
+  #splash .txt{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint);text-align:center;min-height:14px;}
+  #splash .txt .accent{color:var(--amber);text-shadow:0 0 8px rgba(255,180,84,.5);}
+
+  #splash .barwrap{width:220px;height:2px;background:var(--line-soft);border-radius:2px;overflow:hidden;}
+  #splash .bar{height:100%;width:0%;background:linear-gradient(90deg,var(--cyan),var(--amber));box-shadow:0 0 8px rgba(255,180,84,.5);transition:width .25s ease;}
+
+  /* ============ TOP BAR ============ */
+  .topbar{
+    position:sticky;top:0;z-index:20;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    padding:16px 22px;background:rgba(3,4,10,0.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line-soft);
+  }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand .dot{position:relative;width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber);animation:pulse 2s ease-in-out infinite;}
+  .brand .dot::before{content:'';position:absolute;inset:-6px;border:1px solid rgba(255,180,84,.35);border-radius:50%;animation:spin 4s linear infinite;}
+  .brand .name{font-family:var(--tech);font-weight:700;font-size:14px;letter-spacing:.04em;color:#c3cde2;text-transform:uppercase;}
+  .brand .name small{color:var(--text-dim);font-weight:500;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;margin-left:8px;}
+  .hint{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);}
+  .hint b{color:var(--text-dim);}
+
+  /* ============ INTRO STRIP ============ */
+  .intro{max-width:1180px;margin:0 auto;padding:28px 22px 6px;position:relative;z-index:2;}
+  .intro h1{font-family:var(--tech);font-size:clamp(22px,3vw,32px);letter-spacing:.03em;color:#dbe4f5;margin:0 0 8px;text-transform:uppercase;}
+  .intro h1 span{color:var(--amber);text-shadow:0 0 14px rgba(255,180,84,.4);}
+  .intro p{font-family:var(--mono);font-size:12.5px;color:var(--text-dim);max-width:760px;line-height:1.7;margin:0 0 4px;}
+
+  /* ============ FORCE LEGEND ============ */
+  .legend{max-width:1180px;margin:14px auto 0;padding:0 22px;display:flex;gap:10px;flex-wrap:wrap;position:relative;z-index:2;}
+  .leg-chip{
+    display:flex;align-items:center;gap:7px;background:var(--panel-2);border:1px solid var(--line);
+    border-radius:8px;padding:7px 11px;font-family:var(--mono);font-size:10.5px;color:var(--text-dim);
+    cursor:pointer;transition:.15s;user-select:none;
+  }
+  .leg-chip:hover{border-color:var(--line-bright);color:var(--text);}
+  .leg-chip.active{color:#fff;box-shadow:inset 0 0 0 1px currentColor;}
+  .leg-chip .sw{width:9px;height:9px;border-radius:50%;flex:none;}
+  .leg-chip[data-force="strong"] .sw{background:var(--f-strong);box-shadow:0 0 6px var(--f-strong);}
+  .leg-chip[data-force="em"] .sw{background:var(--f-em);box-shadow:0 0 6px var(--f-em);}
+  .leg-chip[data-force="weak"] .sw{background:var(--f-weak);box-shadow:0 0 6px var(--f-weak);}
+  .leg-chip[data-force="higgs"] .sw{background:var(--f-higgs);box-shadow:0 0 6px var(--f-higgs);}
+  .leg-chip.active[data-force="strong"]{color:var(--f-strong);}
+  .leg-chip.active[data-force="em"]{color:var(--f-em);}
+  .leg-chip.active[data-force="weak"]{color:var(--f-weak);}
+  .leg-chip.active[data-force="higgs"]{color:var(--f-higgs);}
+  .leg-reset{margin-left:auto;background:none;border:1px solid var(--line);color:var(--text-faint);font-family:var(--mono);font-size:10px;padding:7px 11px;border-radius:8px;cursor:pointer;}
+  .leg-reset:hover{color:var(--text-dim);border-color:var(--cyan-dim);}
+
+  /* ============ MAIN CHART ============ */
+  .chart-wrap{max-width:1180px;margin:20px auto 30px;padding:0 22px;position:relative;z-index:2;}
+
+  .fermion-grid{
+    display:grid;
+    grid-template-columns:88px repeat(3,1fr) 130px;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .row-label{
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);
+    writing-mode:vertical-rl;transform:rotate(180deg);
+  }
+  .gen-label{
+    grid-column:2/5;display:grid;grid-template-columns:repeat(3,1fr);
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);
+    text-align:center;padding-bottom:4px;
+  }
+  .gen-label span{border-bottom:1px solid var(--line-soft);padding-bottom:8px;}
+  .fam-label{
+    display:flex;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--text-faint);padding-left:2px;
+  }
+
+  .p-card{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
+    padding:12px 10px 10px;cursor:pointer;transition:.18s;position:relative;overflow:hidden;
+    min-height:104px;display:flex;flex-direction:column;justify-content:space-between;
+  }
+  .p-card::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 20%, rgba(255,255,255,0.04), transparent 60%);pointer-events:none;}
+  .p-card:hover{transform:translateY(-2px);border-color:var(--line-bright);box-shadow:0 10px 26px rgba(0,0,0,0.4);}
+  .p-card.dim{opacity:.22;}
+  .p-card.lit{border-color:var(--pc);box-shadow:0 0 0 1px var(--pc), 0 0 22px -4px var(--pc);}
+  .p-card .sym{font-family:var(--tech);font-weight:700;font-size:20px;color:#e7edf8;line-height:1;}
+  .p-card .sym sub{font-size:11px;}
+  .p-card .name{font-size:11.5px;color:var(--text);margin-top:3px;font-weight:600;}
+  .p-card .meta{font-family:var(--mono);font-size:9.5px;color:var(--text-faint);margin-top:6px;display:flex;justify-content:space-between;}
+  .p-card .meta .q{color:var(--text-dim);}
+  .p-card .forcedots{display:flex;gap:4px;margin-top:6px;}
+  .p-card .forcedots i{width:6px;height:6px;border-radius:50%;display:block;}
+
+  .antimatter-note{font-family:var(--mono);font-size:9.5px;color:var(--text-faint);text-align:center;margin-top:2px;}
+
+  /* boson row */
+  .boson-strip{
+    margin-top:26px;padding-top:18px;border-top:1px solid var(--line-soft);
+  }
+  .boson-strip .gen-label{grid-column:1/-1;text-align:left;padding-left:2px;}
+  .boson-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+  @media (max-width:760px){.boson-grid{grid-template-columns:repeat(2,1fr);}}
+  .p-card.boson{min-height:118px;}
+  .p-card.higgs{border-color:rgba(255,180,84,.4);}
+
+  @media (max-width:900px){
+    .fermion-grid{grid-template-columns:56px repeat(3,1fr) 90px;}
+    .row-label{writing-mode:horizontal-tb;transform:none;font-size:8.5px;}
+  }
+  @media (max-width:640px){
+    .fermion-grid{grid-template-columns:1fr 1fr;}
+    .row-label,.fam-label{display:none;}
+    .gen-label{display:none;}
+  }
+
+  /* ============ DETAIL WINDOW (modal) ============ */
+  .overlay{
+    position:fixed;inset:0;z-index:60;background:rgba(2,3,6,0.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;padding:24px;
+    opacity:0;pointer-events:none;transition:opacity .22s ease;
+  }
+  .overlay.show{opacity:1;pointer-events:auto;}
+  .p-window{
+    width:100%;max-width:620px;max-height:88vh;overflow-y:auto;
+    background:var(--panel-solid);border:1px solid var(--line-bright);border-radius:16px;
+    box-shadow:0 30px 80px rgba(0,0,0,0.6);
+    transform:translateY(14px) scale(.98);transition:transform .22s ease;
+  }
+  .overlay.show .p-window{transform:translateY(0) scale(1);}
+  .p-window::-webkit-scrollbar{width:7px;} .p-window::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
+
+  .pw-head{
+    display:flex;align-items:center;gap:16px;padding:22px 24px 18px;border-bottom:1px solid var(--line-soft);
+    background:linear-gradient(135deg, rgba(255,255,255,0.03), transparent);
+  }
+  .pw-symbol{
+    width:64px;height:64px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+    font-family:var(--tech);font-weight:700;font-size:30px;color:#fff;flex:none;
+    background:var(--panel-2);border:1px solid var(--pc);box-shadow:0 0 26px -6px var(--pc);
+  }
+  .pw-symbol sub{font-size:15px;}
+  .pw-titles{flex:1;min-width:0;}
+  .pw-titles .cat{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);margin-bottom:3px;}
+  .pw-titles h2{margin:0;font-family:var(--tech);font-size:19px;letter-spacing:.02em;color:#e7edf8;text-transform:uppercase;}
+  .pw-titles .tag{font-family:var(--mono);font-size:10.5px;color:var(--text-dim);margin-top:4px;}
+  .pw-close{background:none;border:1px solid var(--line);color:var(--text-dim);font-family:var(--mono);font-size:11px;padding:7px 10px;border-radius:8px;cursor:pointer;flex:none;}
+  .pw-close:hover{color:#fff;border-color:var(--rose);}
+
+  .pw-body{padding:20px 24px 24px;}
+  .pw-blurb{font-size:13px;color:var(--text);line-height:1.7;margin-bottom:18px;}
+
+  .pw-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-soft);border-radius:10px;overflow:hidden;margin-bottom:18px;}
+  .pw-stat{background:rgba(11,15,26,0.6);padding:12px 13px;}
+  .pw-stat .k{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);margin-bottom:5px;}
+  .pw-stat .v{font-family:var(--mono);font-size:14px;color:var(--text);font-weight:600;line-height:1.25;}
+  .pw-stat .v small{font-size:9.5px;color:var(--text-dim);font-weight:400;}
+  @media (max-width:520px){.pw-stats{grid-template-columns:repeat(2,1fr);}}
+
+  .pw-section-hd{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);margin:18px 0 10px;display:flex;align-items:center;gap:8px;}
+  .pw-section-hd .idx{color:var(--violet);}
+  .pw-section-hd .idx::before{content:'[';color:var(--text-faint);}
+  .pw-section-hd .idx::after{content:']';color:var(--text-faint);}
+
+  .force-list{display:flex;flex-direction:column;gap:8px;}
+  .force-row{
+    display:flex;align-items:center;gap:10px;background:var(--panel-2);border:1px solid var(--line);
+    border-radius:9px;padding:9px 12px;
+  }
+  .force-row .dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .force-row .fname{font-size:12px;color:var(--text);font-weight:600;min-width:100px;}
+  .force-row .fdesc{font-family:var(--mono);font-size:10.5px;color:var(--text-dim);flex:1;}
+  .force-row.off{opacity:.32;}
+  .force-row.off .fdesc{font-style:italic;}
+
+  .dig-toggle{
+    display:flex;align-items:center;gap:8px;background:none;border:1px dashed var(--line);color:var(--text-dim);
+    font-family:var(--mono);font-size:10.5px;padding:9px 13px;border-radius:9px;cursor:pointer;width:100%;
+    margin-top:6px;transition:.15s;text-align:left;
+  }
+  .dig-toggle:hover{border-color:var(--violet);color:var(--violet);}
+  .dig-toggle .arrow{margin-left:auto;transition:transform .2s;}
+  .dig-toggle.open .arrow{transform:rotate(90deg);}
+  .dig-panel{
+    max-height:0;overflow:hidden;opacity:0;transition:max-height .3s ease, opacity .25s ease, margin .3s ease;
+  }
+  .dig-panel.open{max-height:600px;opacity:1;margin-top:10px;}
+  .dig-inner{
+    background:rgba(168,136,255,0.05);border:1px solid rgba(168,136,255,0.25);border-radius:10px;
+    padding:14px 16px;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);line-height:1.8;
+  }
+  .dig-inner .eq{
+    display:block;color:var(--violet);font-size:13px;background:rgba(0,0,0,0.3);border-radius:7px;
+    padding:9px 12px;margin:8px 0;text-align:center;letter-spacing:.02em;
+  }
+  .dig-inner b{color:var(--text);}
+
+  .pw-nav{display:flex;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line-soft);}
+  .pw-nav button{
+    flex:1;background:var(--panel-2);border:1px solid var(--line);color:var(--text-dim);font-family:var(--mono);
+    font-size:10.5px;padding:9px;border-radius:8px;cursor:pointer;transition:.15s;
+  }
+  .pw-nav button:hover{border-color:var(--cyan-dim);color:var(--text);}
+
+  /* ============ OPEN QUESTIONS STRIP ============ */
+  .oq-wrap{max-width:1180px;margin:10px auto 60px;padding:0 22px;position:relative;z-index:2;}
+  .oq-hd{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);
+    display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+  .oq-hd .idx{color:var(--rose);} .oq-hd .idx::before{content:'[';color:var(--text-faint);} .oq-hd .idx::after{content:']';color:var(--text-faint);}
+  .oq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;}
+  .oq-card{background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:14px 15px;}
+  .oq-card h4{margin:0 0 6px;font-size:12.5px;color:var(--rose);}
+  .oq-card p{margin:0;font-family:var(--mono);font-size:10.5px;color:var(--text-dim);line-height:1.6;}
+
+  footer{max-width:1180px;margin:0 auto;padding:0 22px 40px;font-family:var(--mono);font-size:9.5px;color:var(--text-faint);line-height:1.6;position:relative;z-index:2;}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="atom">
+    <div class="ring-static"></div>
+    <div class="ring-static r2"></div>
+    <div class="orbit o1"><i></i></div>
+    <div class="orbit o2"><i></i></div>
+    <div class="orbit o3"><i></i></div>
+    <div class="core"></div>
+  </div>
+  <div class="brandline">Physics <span>·</span> The Standard Model</div>
+  <div class="txt" id="splashTxt">Assembling <span class="accent">17</span> fundamental particles…</div>
+  <div class="barwrap"><div class="bar" id="splashBar"></div></div>
+</div>
+
+<div class="grid-overlay"></div>
+<div class="scan-sweep"></div>
+<div class="vignette"></div>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="dot"></div>
+    <div class="name">Physics <small>Standard Model · Particle Atlas</small></div>
+  </div>
+  <div class="hint">Click any particle for full detail — <b>17</b> fundamental particles</div>
+</div>
+
+<div class="intro">
+  <h1>The <span>Standard Model</span> of Particle Physics</h1>
+  <p>Everything observed at CERN — every collision, every track, every detector signal in the Experiments room — reduces to combinations of these seventeen particles and the four forces that connect them. Twelve matter particles (fermions), four force carriers, and the Higgs boson that gives many of them mass.</p>
+</div>
+
+<div class="legend" id="legend">
+  <div class="leg-chip" data-force="strong"><span class="sw"></span>Strong force</div>
+  <div class="leg-chip" data-force="em"><span class="sw"></span>Electromagnetic</div>
+  <div class="leg-chip" data-force="weak"><span class="sw"></span>Weak force</div>
+  <div class="leg-chip" data-force="higgs"><span class="sw"></span>Higgs field</div>
+  <button class="leg-reset" id="legReset">Reset</button>
+</div>
+
+<div class="chart-wrap">
+
+  <div class="fermion-grid">
+    <div></div>
+    <div class="gen-label"><span>Generation I</span><span>Generation II</span><span>Generation III</span></div>
+    <div></div>
+
+    <div class="row-label">Quarks</div>
+    <div class="fam-label">Up-type</div>
+    <div id="slot-u"></div>
+    <div id="slot-c"></div>
+    <div id="slot-t"></div>
+    <div class="row-label" style="grid-row:2/4;">▲ Strong+EM+Weak</div>
+
+    <div></div>
+    <div class="fam-label">Down-type</div>
+    <div id="slot-d"></div>
+    <div id="slot-s"></div>
+    <div id="slot-b"></div>
+
+    <div class="row-label">Leptons</div>
+    <div class="fam-label">Charged</div>
+    <div id="slot-e"></div>
+    <div id="slot-mu"></div>
+    <div id="slot-tau"></div>
+    <div class="row-label" style="grid-row:5/7;">▼ EM+Weak only</div>
+
+    <div></div>
+    <div class="fam-label">Neutrino</div>
+    <div id="slot-ve"></div>
+    <div id="slot-vmu"></div>
+    <div id="slot-vtau"></div>
+  </div>
+
+  <div class="antimatter-note">Every fermion above also has an antimatter partner (opposite charge, same mass) — not shown separately.</div>
+
+  <div class="boson-strip">
+    <div class="gen-label"><span>Force carriers &amp; the Higgs boson</span></div>
+    <div class="boson-grid" id="boson-row"></div>
+  </div>
+
+</div>
+
+<div class="oq-wrap">
+  <div class="oq-hd"><span class="idx">05</span> Beyond the Standard Model — what it can't explain</div>
+  <div class="oq-grid">
+    <div class="oq-card"><h4>Dark matter</h4><p>~27% of the universe's mass-energy doesn't match any particle here. Gravitationally real, otherwise invisible.</p></div>
+    <div class="oq-card"><h4>Dark energy</h4><p>~68% of the universe is accelerating cosmic expansion — no Standard Model particle or field explains it.</p></div>
+    <div class="oq-card"><h4>Neutrino mass</h4><p>The Standard Model originally predicted massless neutrinos. Oscillation experiments proved they have tiny mass — the theory had to be patched.</p></div>
+    <div class="oq-card"><h4>Matter–antimatter asymmetry</h4><p>The Big Bang should have made equal matter and antimatter, annihilating into pure energy. Something tipped the balance — we don't fully know what.</p></div>
+    <div class="oq-card"><h4>No quantum gravity</h4><p>Gravity has no place in this table. There's no known graviton, and no consistent quantum theory of gravity yet.</p></div>
+    <div class="oq-card"><h4>Why these masses?</h4><p>The Higgs mechanism explains <i>how</i> particles get mass, not why each one's coupling — and therefore its mass — has the exact value it does.</p></div>
+  </div>
+</div>
+
+<footer>
+  Masses and quantum numbers per Particle Data Group (PDG) conventions. Neutrino masses shown as experimental upper bounds — exact values remain unmeasured. This room complements the Accelerators room (how particles reach these energies) and the Experiments room (how detectors observe the interactions described here).
+</footer>
+
+<!-- ============ DETAIL MODAL ============ -->
+<div class="overlay" id="overlay">
+  <div class="p-window" id="pwindow"></div>
+</div>
+
+<script>
+// ============================================================
+// SPLASH SCREEN
+// ============================================================
+(function(){
+  const splash = document.getElementById('splash');
+  const bar = document.getElementById('splashBar');
+  const txt = document.getElementById('splashTxt');
+  const steps = [
+    {p:18, msg:'Assembling <span class="accent">17</span> fundamental particles…'},
+    {p:42, msg:'Mapping <span class="accent">4</span> fundamental forces…'},
+    {p:68, msg:'Loading Higgs field coupling data…'},
+    {p:90, msg:'Rendering Standard Model chart…'},
+    {p:100, msg:'Ready.'}
+  ];
+  let i = 0;
+  function nextStep(){
+    if(i >= steps.length){
+      setTimeout(()=> splash.classList.add('hidden'), 260);
+      return;
+    }
+    const s = steps[i];
+    bar.style.width = s.p + '%';
+    txt.innerHTML = s.msg;
+    i++;
+    setTimeout(nextStep, 320 + Math.random()*220);
+  }
+  setTimeout(nextStep, 200);
+  // safety net: never let the splash block the page for more than ~4.5s
+  setTimeout(()=> splash.classList.add('hidden'), 4500);
+})();
+
+// ============================================================
+// PARTICLE DATA
+// ============================================================
+// forces: which of strong/em/weak/higgs each particle participates in
+// couples to higgs = true for all massive fermions + W/Z (mass generation)
+
+const FORCE_META = {
+  strong:{label:'Strong nuclear', color:'var(--f-strong)', carrier:'gluon (g)', desc:'Binds quarks into protons/neutrons; confines color charge.'},
+  em:{label:'Electromagnetic', color:'var(--f-em)', carrier:'photon (γ)', desc:'Acts on all electric charge; infinite range.'},
+  weak:{label:'Weak nuclear', color:'var(--f-weak)', carrier:'W±/Z bosons', desc:'Causes radioactive decay & flavor change; acts on all fermions.'},
+  higgs:{label:'Higgs field', color:'var(--f-higgs)', carrier:'Higgs boson (H)', desc:'Coupling to this field is the origin of particle mass.'}
+};
+
+const PARTICLES = {
+  // ---- Quarks, up-type ----
+  u:{cat:'Quark · up-type', name:'Up quark', sym:'u', charge:'+2/3', spin:'1/2', gen:1,
+     mass:'2.2 MeV/c²', mass_note:'lightest quark',
+     forces:['strong','em','weak','higgs'],
+     blurb:'The lightest, most common quark. Two ups and one down make a proton. Its mass comes almost entirely from the strong-force binding energy inside hadrons, not from the Higgs coupling.',
+     dig:'Yukawa coupling to the Higgs field: <span class="eq">m_u = y_u · v/√2</span> with v ≈ 246 GeV. Because y_u is tiny (~10⁻⁵), the bare quark mass is minuscule — nearly all of a proton\'s 938 MeV comes from gluon binding energy (QCD dynamics), not from this term.'},
+  c:{cat:'Quark · up-type', name:'Charm quark', sym:'c', charge:'+2/3', spin:'1/2', gen:2,
+     mass:'1.27 GeV/c²', mass_note:'',
+     forces:['strong','em','weak','higgs'],
+     blurb:'Discovered in 1974 (the "November Revolution") via the J/ψ meson, found simultaneously at Brookhaven and SLAC. Its discovery confirmed the quark model and predicted the second generation.',
+     dig:'m_c is defined in the <b>MS-bar scheme</b> at scale μ=m_c, m_c(m_c) ≈ 1.27 GeV. Unlike up/down, the charm mass is large enough that perturbative QCD gives a reasonably clean determination from charmonium spectroscopy.'},
+  t:{cat:'Quark · up-type', name:'Top quark', sym:'t', charge:'+2/3', spin:'1/2', gen:3,
+     mass:'172.5 GeV/c²', mass_note:'heaviest known fundamental particle',
+     forces:['strong','em','weak','higgs'],
+     blurb:'Discovered 1995 at Fermilab (CDF/D0). Heavier than a gold nucleus, it decays via the weak force in about 5×10⁻²⁵ s — too fast to hadronize, so physicists study it as a "bare" quark.',
+     dig:'Top\'s Yukawa coupling is y_t ≈ 1 — essentially order-unity, unlike every other fermion. This near-maximal coupling to the Higgs field is thought to be significant for electroweak symmetry breaking and vacuum stability calculations.'},
+  // ---- Quarks, down-type ----
+  d:{cat:'Quark · down-type', name:'Down quark', sym:'d', charge:'−1/3', spin:'1/2', gen:1,
+     mass:'4.7 MeV/c²', mass_note:'',
+     forces:['strong','em','weak','higgs'],
+     blurb:'One up and two downs make a neutron. Slightly heavier than the up quark — that small mass difference is part of why neutrons decay into protons (beta decay) and not the reverse.',
+     dig:'m_d > m_u by ~2.5 MeV. This asymmetry, combined with electromagnetic effects, sets the proton–neutron mass difference and therefore which nuclei are stable — a small number with large cosmological consequences.'},
+  s:{cat:'Quark · down-type', name:'Strange quark', sym:'s', charge:'−1/3', spin:'1/2', gen:2,
+     mass:'95 MeV/c²', mass_note:'',
+     forces:['strong','em','weak','higgs'],
+     blurb:'First evidence came from cosmic-ray "V-particles" in 1947 that decayed unexpectedly slowly — hence "strange." Gives rise to kaons and hyperons.',
+     dig:'Strangeness is conserved by the strong and EM forces but violated by the weak force — this is why strange particles decay slowly (weak-force timescales, ~10⁻¹⁰s) despite being strongly produced.'},
+  b:{cat:'Quark · down-type', name:'Bottom quark', sym:'b', charge:'−1/3', spin:'1/2', gen:3,
+     mass:'4.18 GeV/c²', mass_note:'',
+     forces:['strong','em','weak','higgs'],
+     blurb:'Discovered 1977 at Fermilab via the Upsilon meson. Central to LHCb\'s physics program — B-meson decays are a leading probe of CP violation (matter/antimatter asymmetry).',
+     dig:'B-hadrons have long-ish lifetimes (~1.5 ps) because b→c transitions are CKM-suppressed. This lets LHCb\'s vertex detector (VELO) resolve decay vertices millimeters from the collision point.'},
+  // ---- Leptons, charged ----
+  e:{cat:'Lepton · charged', name:'Electron', sym:'e', charge:'−1', spin:'1/2', gen:1,
+     mass:'0.511 MeV/c²', mass_note:'',
+     forces:['em','weak','higgs'],
+     blurb:'Discovered 1897 by J.J. Thomson — the first subatomic particle ever identified. Stable, and the lightest charged lepton; every atom\'s chemistry is governed by electrons.',
+     dig:'Electron g-factor (magnetic moment anomaly) is one of the most precisely tested predictions in all of physics: QED predicts it to ~12 significant figures, matching experiment — a landmark validation of the whole framework this room describes.'},
+  mu:{cat:'Lepton · charged', name:'Muon', sym:'μ', charge:'−1', spin:'1/2', gen:2,
+     mass:'105.7 MeV/c²', mass_note:'',
+     forces:['em','weak','higgs'],
+     blurb:'~207× heavier than the electron, otherwise near-identical. Unstable (mean lifetime 2.2 μs), decaying to an electron and two neutrinos. Cosmic-ray muons rain down through you constantly.',
+     dig:'The muon\'s anomalous magnetic moment (g−2) shows a persistent tension between Standard Model prediction and Fermilab measurement — one of the more closely watched possible cracks in this table.'},
+  tau:{cat:'Lepton · charged', name:'Tau', sym:'τ', charge:'−1', spin:'1/2', gen:3,
+     mass:'1.777 GeV/c²', mass_note:'',
+     forces:['em','weak','higgs'],
+     blurb:'The heaviest lepton — nearly twice a proton\'s mass. Discovered 1975 at SLAC. Decays so fast (2.9×10⁻¹³ s) it\'s only ever seen through its decay products.',
+     dig:'Tau is the only lepton heavy enough to decay into hadrons (via a virtual W boson producing quark–antiquark pairs), giving it a much richer decay phenomenology than the electron or muon.'},
+  // ---- Neutrinos ----
+  ve:{cat:'Lepton · neutrino', name:'Electron neutrino', sym:'ν', symSub:'e', charge:'0', spin:'1/2', gen:1,
+     mass:'< 0.8 eV/c²', mass_note:'upper bound only',
+     forces:['weak'],
+     blurb:'Proposed by Pauli in 1930 to save energy conservation in beta decay; first detected 1956. Passes through matter almost undisturbed — trillions pass through your body every second.',
+     dig:'Neutrino flavor states (ν_e, ν_μ, ν_τ) shown here are not the same as the mass eigenstates (ν₁, ν₂, ν₃) — neutrinos oscillate between flavors in flight, proof that they have nonzero mass, which the original Standard Model did not predict.'},
+  vmu:{cat:'Lepton · neutrino', name:'Muon neutrino', sym:'ν', symSub:'μ', charge:'0', spin:'1/2', gen:2,
+     mass:'< 0.19 MeV/c²', mass_note:'upper bound only',
+     forces:['weak'],
+     blurb:'Discovered 1962 (Lederman, Schwartz, Steinberger — Nobel 1988), proving neutrinos come in more than one flavor, tied to the muon rather than the electron.',
+     dig:'Produced alongside muons in pion decay (π⁺→μ⁺+ν_μ) — this is the standard method neutrino-beam experiments use to generate a controlled neutrino source.'},
+  vtau:{cat:'Lepton · neutrino', name:'Tau neutrino', sym:'ν', symSub:'τ', charge:'0', spin:'1/2', gen:3,
+     mass:'< 18.2 MeV/c²', mass_note:'upper bound only',
+     forces:['weak'],
+     blurb:'Last fermion confirmed, directly observed in 2000 at Fermilab\'s DONUT experiment — completing the 12-fermion picture of the Standard Model.',
+     dig:'Direct detection required identifying the very short track of a tau lepton produced by a tau-neutrino charged-current interaction in emulsion — a technically brutal measurement, which is why it came so late.'},
+};
+
+const BOSONS = {
+  g:{cat:'Gauge boson', name:'Gluon', sym:'g', charge:'0', spin:'1', mass:'0 (massless)', mass_note:'',
+     forces:['strong'],
+     blurb:'Carrier of the strong force. Unlike the photon, gluons carry color charge themselves, so they interact with each other — this self-interaction is why quarks are permanently confined inside hadrons.',
+     dig:'8 independent gluon color-states exist (from the SU(3) adjoint representation, 3²−1=8). Gluon self-coupling makes QCD non-abelian and gives rise to asymptotic freedom: the strong force gets weaker at short distance, stronger at long distance.'},
+  photon:{cat:'Gauge boson', name:'Photon', sym:'γ', charge:'0', spin:'1', mass:'0 (massless)', mass_note:'',
+     forces:['em'],
+     blurb:'Carrier of the electromagnetic force and of light itself. Massless and chargeless, so it doesn\'t self-interact — giving EM its clean, infinite-range inverse-square behavior.',
+     dig:'The photon is the gauge boson of unbroken U(1) electromagnetic symmetry. It does not couple to the Higgs field (Higgs is electrically neutral), which is precisely why it remains massless after electroweak symmetry breaking.'},
+  w:{cat:'Gauge boson', name:'W boson', sym:'W', symSub:'±', charge:'±1', spin:'1', mass:'80.4 GeV/c²', mass_note:'',
+     forces:['weak','higgs'],
+     blurb:'One of two carriers of the weak force. Uniquely electrically charged among force carriers, which lets it change a particle\'s flavor and charge in the same interaction — e.g. turning a down quark into an up quark in beta decay.',
+     dig:'W and Z masses arise from spontaneous electroweak symmetry breaking: <span class="eq">m_W = ½ g v</span>, where g is the weak coupling and v≈246 GeV the Higgs vacuum expectation value. Before symmetry breaking, W/Z/photon were massless components of a unified electroweak field.'},
+  z:{cat:'Gauge boson', name:'Z boson', sym:'Z', charge:'0', spin:'1', mass:'91.2 GeV/c²', mass_note:'',
+     forces:['weak','higgs'],
+     blurb:'The neutral carrier of the weak force — mediates interactions that don\'t change particle identity, only momentum/energy. Its precisely measured mass and width let LEP determine there are exactly 3 light neutrino generations.',
+     dig:'<span class="eq">m_Z = ½ v √(g² + g′²)</span>, combining the weak coupling g and hypercharge coupling g′. The ratio m_W/m_Z defines the weak mixing angle θ_W, a cornerstone precision test of the electroweak sector.'},
+  h:{cat:'Scalar boson', name:'Higgs boson', sym:'H', charge:'0', spin:'0', mass:'125.25 GeV/c²', mass_note:'',
+     forces:['higgs'],
+     blurb:'The quantum excitation of the Higgs field. Discovered July 2012 by ATLAS and CMS simultaneously — the last piece of the Standard Model to be confirmed, 48 years after being theorized.',
+     dig:'Unique as the only known fundamental scalar (spin-0) particle. Its coupling to each fermion is proportional to that fermion\'s mass — the Higgs literally couples strongest to the heaviest particles (e.g. top quark, y_t≈1), which is why H→bb̄ and H→ττ are key discovery/measurement channels despite H→γγ and H→ZZ→4ℓ being the cleanest.'},
+};
+
+const FORCE_COLOR = {strong:'var(--f-strong)', em:'var(--f-em)', weak:'var(--f-weak)', higgs:'var(--f-higgs)'};
+// primary highlight color per particle = first listed force
+function primaryColor(forces){ return FORCE_COLOR[forces[0]] || 'var(--cyan)'; }
+
+// ============================================================
+// RENDER GRID
+// ============================================================
+function cardHTML(id, p, extraClass){
+  const pc = primaryColor(p.forces);
+  const symHTML = p.symSub ? `${p.sym}<sub>${p.symSub}</sub>` : p.sym;
+  const dots = p.forces.map(f=>`<i style="background:${FORCE_COLOR[f]};box-shadow:0 0 5px ${FORCE_COLOR[f]}"></i>`).join('');
+  return `<div class="p-card ${extraClass||''}" data-id="${id}" data-forces="${p.forces.join(',')}" style="--pc:${pc}">
+    <div>
+      <div class="sym">${symHTML}</div>
+      <div class="name">${p.name}</div>
+    </div>
+    <div>
+      <div class="meta"><span class="q">${p.charge}</span><span>${p.mass.split(' ')[0]}</span></div>
+      <div class="forcedots">${dots}</div>
+    </div>
+  </div>`;
+}
+
+Object.entries(PARTICLES).forEach(([id,p])=>{
+  const slot = document.getElementById('slot-'+id);
+  if(slot) slot.outerHTML = `<div id="slot-${id}" style="display:contents">${cardHTML(id,p)}</div>`;
+});
+
+const bosonRow = document.getElementById('boson-row');
+Object.entries(BOSONS).forEach(([id,p])=>{
+  bosonRow.insertAdjacentHTML('beforeend', cardHTML(id,p,'boson'+(id==='h'?' higgs':'')));
+});
+
+// ============================================================
+// FORCE LEGEND FILTER
+// ============================================================
+let activeForces = new Set();
+function applyFilter(){
+  const cards = document.querySelectorAll('.p-card');
+  if(activeForces.size===0){
+    cards.forEach(c=>c.classList.remove('dim','lit'));
+    return;
+  }
+  cards.forEach(c=>{
+    const forces = c.dataset.forces.split(',');
+    const match = forces.some(f=>activeForces.has(f));
+    c.classList.toggle('dim', !match);
+    c.classList.toggle('lit', match);
+  });
+}
+document.querySelectorAll('.leg-chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    const f = chip.dataset.force;
+    if(activeForces.has(f)){ activeForces.delete(f); chip.classList.remove('active'); }
+    else{ activeForces.add(f); chip.classList.add('active'); }
+    applyFilter();
+  });
+});
+document.getElementById('legReset').addEventListener('click', ()=>{
+  activeForces.clear();
+  document.querySelectorAll('.leg-chip').forEach(c=>c.classList.remove('active'));
+  applyFilter();
+});
+
+// ============================================================
+// DETAIL MODAL
+// ============================================================
+const ALL = {...PARTICLES, ...BOSONS};
+const overlay = document.getElementById('overlay');
+const pwindow = document.getElementById('pwindow');
+
+function renderWindow(id){
+  const p = ALL[id];
+  const pc = primaryColor(p.forces);
+  const symHTML = p.symSub ? `${p.sym}<sub>${p.symSub}</sub>` : p.sym;
+
+  const forceRows = Object.entries(FORCE_META).map(([key,meta])=>{
+    const active = p.forces.includes(key);
+    return `<div class="force-row ${active?'':'off'}">
+      <div class="dot" style="background:${meta.color};box-shadow:${active?`0 0 8px ${meta.color}`:'none'}"></div>
+      <div class="fname" style="color:${active?meta.color:'var(--text-dim)'}">${meta.label}</div>
+      <div class="fdesc">${active ? meta.desc : 'No coupling'}</div>
+    </div>`;
+  }).join('');
+
+  pwindow.innerHTML = `
+    <div class="pw-head">
+      <div class="pw-symbol" style="--pc:${pc}">${symHTML}</div>
+      <div class="pw-titles">
+        <div class="cat">${p.cat}</div>
+        <h2>${p.name}</h2>
+        <div class="tag">${p.gen ? 'Generation '+p.gen+' · ' : ''}Spin ${p.spin}</div>
+      </div>
+      <button class="pw-close" id="pwClose">✕ Close</button>
+    </div>
+    <div class="pw-body">
+      <div class="pw-blurb">${p.blurb}</div>
+
+      <div class="pw-stats">
+        <div class="pw-stat"><div class="k">Charge</div><div class="v">${p.charge}</div></div>
+        <div class="pw-stat"><div class="k">Spin</div><div class="v">${p.spin}</div></div>
+        <div class="pw-stat"><div class="k">Mass</div><div class="v">${p.mass}${p.mass_note?`<br><small>${p.mass_note}</small>`:''}</div></div>
+      </div>
+
+      <div class="pw-section-hd"><span class="idx">01</span> Force interactions</div>
+      <div class="force-list">${forceRows}</div>
+
+      <button class="dig-toggle" id="digToggle">Dig deeper — equations &amp; technical notes <span class="arrow">▸</span></button>
+      <div class="dig-panel" id="digPanel">
+        <div class="dig-inner">${p.dig}</div>
+      </div>
+
+      <div class="pw-nav">
+        <button id="pwPrev">◂ Previous particle</button>
+        <button id="pwNext">Next particle ▸</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('pwClose').addEventListener('click', closeWindow);
+  document.getElementById('digToggle').addEventListener('click', (e)=>{
+    e.currentTarget.classList.toggle('open');
+    document.getElementById('digPanel').classList.toggle('open');
+  });
+
+  const ids = Object.keys(ALL);
+  const idx = ids.indexOf(id);
+  document.getElementById('pwPrev').addEventListener('click', ()=>openWindow(ids[(idx-1+ids.length)%ids.length]));
+  document.getElementById('pwNext').addEventListener('click', ()=>openWindow(ids[(idx+1)%ids.length]));
+}
+
+function openWindow(id){
+  renderWindow(id);
+  overlay.classList.add('show');
+}
+function closeWindow(){
+  overlay.classList.remove('show');
+}
+
+document.querySelectorAll('.p-card').forEach(card=>{
+  card.addEventListener('click', ()=> openWindow(card.dataset.id));
+});
+overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeWindow(); });
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeWindow(); });
+</script>
+</body>
+</html>

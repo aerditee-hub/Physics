@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IBM PC DOS Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --phosphor: #4af626;
+            --phosphor-dim: #2b8f15;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--phosphor);
+            font-family: 'VT323', monospace;
+            font-size: 22px;
+            overflow: hidden;
+            text-transform: uppercase;
+        }
+
+        .crt-monitor {
+            width: 100vw;
+            height: 100vh;
+            box-sizing: border-box;
+            position: relative;
+            padding: 20px;
+            overflow-y: auto;
+            text-shadow: 0 0 4px var(--phosphor-dim), 0 0 10px var(--phosphor-dim);
+            animation: flicker 0.15s infinite;
+        }
+
+        .crt-monitor::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            );
+            background-size: 100% 4px;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .crt-monitor::after {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.98; }
+            50% { opacity: 1; }
+            100% { opacity: 0.99; }
+        }
+
+        .output-line {
+            margin-bottom: 5px;
+            line-height: 1.2;
+            word-wrap: break-word;
+        }
+
+        /* Hidden initially during the boot sequence */
+        #inputWrapper {
+            display: none; 
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        .prompt {
+            margin-right: 8px;
+        }
+
+        input[type="text"] {
+            background: transparent;
+            border: none;
+            color: var(--phosphor);
+            font-family: 'VT323', monospace;
+            font-size: 22px;
+            text-transform: uppercase;
+            text-shadow: inherit;
+            outline: none;
+            flex-grow: 1;
+            caret-color: var(--phosphor);
+        }
+
+        /* Blinking text effect for boot sequence */
+        .blink {
+            animation: blinker 1s linear infinite;
+        }
+
+        @keyframes blinker {
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="crt-monitor" id="terminal">
+        <!-- Output will be dynamically injected here -->
+        <div id="output"></div>
+
+        <div id="inputWrapper">
+            <span class="prompt">C:\></span>
+            <input type="text" id="cmdInput" autocomplete="off" spellcheck="false">
+        </div>
+    </div>
+
+    <script>
+        const cmdInput = document.getElementById('cmdInput');
+        const output = document.getElementById('output');
+        const terminal = document.getElementById('terminal');
+        const inputWrapper = document.getElementById('inputWrapper');
+
+        // Helper function for artificial boot delays
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // --- SPLASH SCREEN / BOOT SEQUENCE LOGIC ---
+        async function runBootSequence() {
+            const bootMessages = [
+                "IBM Personal Computer Basic Input/Output System",
+                "(C) Copyright IBM Corp. 1981, 1982",
+                " ",
+                "Memory Test :  640K OK",
+                " ",
+                "Initializing standard peripherals...",
+                "Keyboard............... OK",
+                "Floppy Disk............ OK",
+                "Fixed Disk............. OK",
+                " ",
+                "Booting from Fixed Disk C:..."
+            ];
+
+            for (let i = 0; i < bootMessages.length; i++) {
+                const msg = bootMessages[i];
+                const line = document.createElement('div');
+                line.className = 'output-line';
+                line.innerHTML = msg === " " ? "&nbsp;" : msg;
+                
+                if (i === bootMessages.length - 1) {
+                    line.innerHTML += '<span class="blink">_</span>';
+                }
+
+                output.appendChild(line);
+                terminal.scrollTop = terminal.scrollHeight;
+                
+                let delay = msg === " " ? 150 : Math.random() * 200 + 100;
+                
+                if (msg.includes("Memory Test")) delay += 800;
+                if (msg.includes("Booting")) delay += 1200;
+                
+                await sleep(delay);
+            }
+            
+            output.innerHTML = ''; 
+            startTerminal();
+        }
+
+        function startTerminal() {
+            output.innerHTML = `
+                <div class="output-line">IBM Personal Computer DOS</div>
+                <div class="output-line">Version 2.10 (C)Copyright IBM Corp 1981, 1982, 1983</div>
+                <div class="output-line">&nbsp;</div>
+                <div class="output-line">System checking... OK</div>
+                <div class="output-line">640K RAM SYSTEM</div>
+                <div class="output-line">&nbsp;</div>
+                <div class="output-line">Type HELP for a list of available commands.</div>
+                <div class="output-line">&nbsp;</div>
+            `;
+            
+            inputWrapper.style.display = 'flex';
+            cmdInput.focus();
+        }
+
+        window.onload = runBootSequence;
+
+        // --- TERMINAL INTERACTION LOGIC ---
+        document.addEventListener('click', () => {
+            if (inputWrapper.style.display !== 'none') cmdInput.focus();
+        });
+
+        cmdInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const command = this.value.toUpperCase().trim();
+                this.value = '';
+
+                const cmdEcho = document.createElement('div');
+                cmdEcho.className = 'output-line';
+                cmdEcho.textContent = 'C:\\> ' + command;
+                output.appendChild(cmdEcho);
+
+                handleCommand(command);
+                terminal.scrollTop = terminal.scrollHeight;
+            }
+        });
+
+        function handleCommand(cmd) {
+            const response = document.createElement('div');
+            response.className = 'output-line';
+
+            if (cmd === '') {
+                return; 
+            } 
+            else if (cmd === 'HELP') {
+                response.innerHTML = 'COMMANDS AVAILABLE:<br>' +
+                                     'DIR             - List directory contents<br>' +
+                                     'CLS             - Clear the screen<br>' +
+                                     'VER             - Display DOS version<br>' +
+                                     'MEM             - Display memory status<br>' +
+                                     'CALC            - Perform basic math (e.g. CALC 5+2*3)<br>' +
+                                     'RUN SIMULATION  - Load the main simulation program';
+            } 
+            else if (cmd === 'DIR') {
+                response.innerHTML = 'Volume in drive C is IBM_DOS<br><br>' +
+                                     'COMMAND  COM    17792  10-20-83  12:00p<br>' +
+                                     'AUTOEXEC BAT       15  01-01-84  12:01a<br>' +
+                                     'CONFIG   SYS      128  01-01-84  12:01a<br>' +
+                                     'SIMULATN HTML   24576  08-15-26  10:08a<br><br>' +
+                                     '       4 File(s)    1442816 bytes free';
+            } 
+            else if (cmd === 'CLS') {
+                output.innerHTML = '';
+                return;
+            } 
+            else if (cmd === 'VER') {
+                response.innerHTML = 'IBM Personal Computer DOS Version 2.10';
+            } 
+            else if (cmd === 'MEM') {
+                response.innerHTML = '655360 bytes total memory<br>655360 bytes available';
+            } 
+            else if (cmd.startsWith('CALC ')) {
+                const expression = cmd.substring(5).trim();
+                try {
+                    const sanitized = expression.replace(/[^0-9+\-*/().\s]/g, '');
+                    
+                    if (sanitized !== expression) {
+                        response.innerHTML = 'SYNTAX ERROR: Invalid characters in math expression.';
+                    } else {
+                        const result = new Function('return ' + sanitized)();
+                        response.innerHTML = 'RESULT: ' + result;
+                    }
+                } catch (error) {
+                    response.innerHTML = 'MATH ERROR: Could not calculate expression.';
+                }
+            } 
+            else if (cmd === 'RUN SIMULATION') {
+                response.innerHTML = 'LOADING SIMULATION ENVIRONMENT...';
+                
+                // Simulate a tiny loading delay before redirecting in the same screen
+                setTimeout(() => {
+                    // Make sure you have a file named "simulation.html" in the same folder!
+                    window.location.href = 'simulation.html'; 
+                }, 800);
+            }
+            else {
+                response.innerHTML = 'Bad command or file name';
+            }
+            
+            output.appendChild(response);
+            
+            const spacer = document.createElement('div');
+            spacer.className = 'output-line';
+            spacer.innerHTML = '&nbsp;';
+            output.appendChild(spacer);
+        }
+    </script>
+</body>
+</html>
